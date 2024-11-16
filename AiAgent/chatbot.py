@@ -20,7 +20,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
 
 # Initialize LangChain components
-groq_api_key = "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"
+groq_api_key = "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"
 model = "llama3-8b-8192"
 system_prompt = prompt_data 
 
