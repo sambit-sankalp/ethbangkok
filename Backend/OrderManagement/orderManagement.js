@@ -161,4 +161,24 @@ function startOrderTimer(orderId) {
     }
   });
 
+// WebSocket connection for real-time updates
+io.on('connection', (socket) => {
+    console.log('New client connected');
   
+    // Join a room for an order
+    socket.on('join_order', (orderId) => {
+      socket.join(orderId);
+      console.log(`Client joined order ${orderId}`);
+    });
+  
+    // Handle client disconnection
+    socket.on('disconnect', () => {
+      console.log('Client disconnected');
+    });
+  });
+  
+  // Start the server
+  const PORT = process.env.PORT || 3001;
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
