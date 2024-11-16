@@ -7,26 +7,10 @@ from langchain_core.prompts import (
 from langchain_core.messages import SystemMessage
 from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 from langchain_groq import ChatGroq
-from prompts import prompt_data
-
-# Attributes required for DSL Parser
-required_attributes = [
-    "source_address",
-    "destination_address",
-    "from_network",
-    "to_network",
-    "from_asset",
-    "to_asset",
-    "amount",
-    "slippage_tolerance",
-    "deadline",
-    "max_gas_fee",
-]
 
 # Initialize LangChain components
 groq_api_key = "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"
 model = "llama3-8b-8192"
-system_prompt = prompt_data
 
 groq_chat = ChatGroq(groq_api_key=groq_api_key, model_name=model)
 conversational_memory_length = 5
@@ -50,7 +34,7 @@ def get_missing_fields(data):
 def generate_response(chat_history, user_input):
     prompt = ChatPromptTemplate.from_messages(
         [
-            SystemMessage(content=system_prompt),
+            SystemMessage(content="You are a helpful bot."),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{human_input}"),
         ]
