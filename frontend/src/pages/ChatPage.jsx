@@ -8,7 +8,7 @@ import LogicNavbar from '../components/home/LogicNavbar';
 import Footer from '../components/home/Footer';
 import LoadingPopup from '../components/LoadingPopup';
 
-function Chat({ provider }) {
+function Chat({ provider, handleLogout }) {
   const clientId = 'VYDh3cKkTV6gUfFHQAuzV87ZKHo6Vd6t'; // Replace with your Web3Auth Client ID
   // const [provider, setProvider] = useState(null);
   const [web3auth, setWeb3auth] = useState(null);
@@ -47,24 +47,24 @@ function Chat({ provider }) {
   //   initWeb3Auth();
   // }, []);
 
-  const handleLogout = async () => {
-    try {
-      if (web3auth) {
-        await web3auth.logout();
-      }
-      // setProvider(null);
-      setAddress('');
-      setUserData({});
-      navigate('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  // const handleLogout = async () => {
+  //   try {
+  //     if (web3auth) {
+  //       await web3auth.logout();
+  //     }
+  //     // setProvider(null);
+  //     setAddress('');
+  //     setUserData({});
+  //     navigate('/');
+  //   } catch (error) {
+  //     console.error('Logout failed:', error);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen text-main">
       {/* Header */}
-      <LogicNavbar />
+      <LogicNavbar handleLogout={handleLogout} />
 
       {/* Chat Section */}
       <div className="w-full flex flex-col min-h-[90vh] bg-[#16161a] text-headline">

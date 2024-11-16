@@ -70,7 +70,7 @@ function Chatbot({ provider }) {
         const contract = new Contract(contractAddress, contractABI, signer); // Create the contract instance
 
         const tx = await contract.deposit({
-          value: parseEther('0.0000001'),
+          value: parseEther('0.000001'),
         }); // Send ETH to deposit function
         await tx.wait();
 
