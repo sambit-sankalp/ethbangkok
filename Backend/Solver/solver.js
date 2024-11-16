@@ -118,3 +118,100 @@ async function updateSolverReputation(competitorId, delta) {
   });
 }
 
+rl.question('Enter your ID: ', async (competitorId) => {
+    try {
+      // Check if solver is blocked
+      const reputation = await getSolverReputation(competitorId);
+      if (reputation <= -3) {
+        console.error('❌ You are blocked from participating due to low reputation.');
+        rl.close();
+        return;
+      }
+  
+      rl.question('Enter intent id: ', async (intentId) => {
+        try {
+          // Fetch the order details
+          const orderResponse = await axios.get(`${SERVER_URL}/orders/${intentId}`);
+          const order = orderResponse.data;
+  
+          const { amount, slippage_tolerance } = order;
+          const maxQuote = amount * slippage_tolerance;
+  
+          console.log(`\nOrder Details:`);
+          console.log(`Amount: ${amount}, Slippage Tolerance: ${slippage_tolerance}`);
+          console.log(`Maximum Allowed Quote: ${maxQuote}\n`);
+  
+          // Get a valid quote
+          const quote = await getValidQuote(maxQuote);
+  
+          // Start loading animation
+          loadingAnimation(5);
+  
+          // After the loading animation, submit the quote and start listening for winner notifications
+          setTimeout(async () => {
+            console.log(`\nYou entered intent ID: ${intentId}`);
+            console.log(`You entered quote: "${quote}"`);
+  
+            // Submit the quote
+            try {
+              const response = await axios.post(`${SERVER_URL}/quotes`, {
+                orderId: intentId,
+                competitorId: competitorId,
+                quote: quote,
+              });
+  
+              console.log(response.data.message);
+  
+              // Join the room for the intentId to receive real-time updates
+              socket.emit('join_order', intentId);
+  
+              // Listen for the winner announcement
+              socket.on('winner', async (data) => {
+                if (data.competitorId === competitorId) {
+                  console.log(`\n🎉 Congratulations! You are the winner with a quote of ${data.quote}`);
+                  // Trigger the deposit function
+                  try {
+                    const tx = await contract.deposit({
+                      value: ethers.utils.parseEther('0.0001'), // Specify the amount to deposit
+                      gasLimit: 100000, // Adjust gas limit as needed
+                    });
+                    console.log('Transaction sent. Waiting for confirmation...');
+                    await tx.wait();
+                    console.log('✅ Deposit transaction successful!');
+                  } catch (txError) {
+                    console.error('❌ Transaction failed:', txError);
+                    // Decrement reputation
+                    await updateSolverReputation(competitorId, -1);
+                    console.log('Your reputation has been decreased due to transaction failure.');
+  
+                    // Check if reputation is below threshold
+                    const newReputation = await getSolverReputation(competitorId);
+                    if (newReputation <= -3) {
+                      console.error('❌ You have been blocked from participating due to low reputation.');
+                    }
+                  }
+                } else {
+                  console.log(`\nSorry, the winner is Competitor ID: ${data.competitorId} with a quote of ${data.quote}`);
+                }
+                rl.close();
+                socket.disconnect();
+              });
+  
+              console.log('Waiting for winner announcement...');
+            } catch (error) {
+              console.error('Error submitting quote:', error.response?.data || error.message);
+              rl.close();
+              socket.disconnect();
+            }
+          }, 5000);
+        } catch (error) {
+          console.error('Error fetching order details:', error.response?.data || error.message);
+          rl.close();
+        }
+      });
+    } catch (error) {
+      console.error('Error retrieving reputation:', error.message);
+      rl.close();
+    }
+  });
+  
