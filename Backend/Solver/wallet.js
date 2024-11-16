@@ -1,8 +1,0 @@
-// wallet.js
-const WALLET_ADDRESS = '0x7B133e5bce9552289Adb6B8a0449318De9C6C894';
-const PRIVATE_KEY = '59e9715f97ca0c76be2b14bedfce5255710de1f882b83a8aea0a8f19ffe0a977';
-
-module.exports = {
-  WALLET_ADDRESS,
-  PRIVATE_KEY,
-};
