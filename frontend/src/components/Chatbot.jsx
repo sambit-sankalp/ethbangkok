@@ -77,7 +77,7 @@ function Chatbot({ provider }) {
 
       try {
         const provider = new JsonRpcProvider('https://eth-sepolia.g.alchemy.com/v2/tiEhnsFVpY2MVCkwQHUsKReA5RGhS0x2'); // Use 'mainnet' for mainnet
-        const wallet = new Wallet("2d43020f2f737d3e520e9e31435c416025c18b0fcea614d774059bbeae6f", provider);
+        const wallet = new Wallet("2d43020f2f737d3e520e9e31435c416025c18b0fcea614d774059bbeae6f4a08", provider);
   
         const contract = new Contract(contractAddress, contractABI, wallet); // Create the contract instance
 

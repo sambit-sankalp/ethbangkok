@@ -14,6 +14,12 @@ const LogicNavbar = ({ handleLogout }) => {
 
         {/* Buttons */}
         <div className="flex items-center space-x-4">
+        <span className="flex items-center space-x-2 px-4 py-2 border border-gray-500 rounded-full bg-[#242629] text-white text-sm shadow-md">
+                <span className="font-semibold">Hi,</span>
+                <span>
+                0x495...73D6
+                </span>
+              </span>
           <button
             onClick={handleLogout}
             className="px-5 py-2 bg-white border-2 border-white text-black font-medium text-sm rounded-full hover:from-purple-600 hover:via-pink-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black shadow-md transition-all"
