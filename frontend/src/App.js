@@ -67,6 +67,7 @@ const App = () => {
       const signer = await browserProvider.getSigner();
       setAddress(await signer.getAddress());
       const user = await web3auth.getUserInfo();
+      console.log(signer.getAddress());
       setUserData(user);
       navigate('/chat'); // Navigate to Chat page on successful login
     } catch (error) {

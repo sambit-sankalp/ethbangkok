@@ -8,6 +8,13 @@ import LoadingPopup from './LoadingPopup';
 import { BrowserProvider, Contract, parseEther } from 'ethers';
 import { dummyABI } from '../contract_abis/dummyAbi';
 
+function truncateAddress(address) {
+  if (!address || address.length <= 6) {
+    return address; // Return as is if the address is too short
+  }
+  return `${address.slice(0, 3)}...${address.slice(-3)}`;
+}
+
 function Chatbot({ provider }) {
   const [chatId, setChatId] = useState(null);
   const [messages, setMessages] = useImmer([]);
@@ -15,20 +22,32 @@ function Chatbot({ provider }) {
   const [cardData, setCardData] = useState([]);
   const [isLoadingPopup, setIsLoadingPopup] = useState(false);
   const [showDetailsPopup, setShowDetailsPopup] = useState(false);
+  const [transactionData, setTransactionData] = useState({
+    source_address: '',
+    destination_address: '',
+    from_network: '',
+    to_network: '',
+    from_asset: '',
+    to_asset: '',
+    amount: '',
+    slippage_tolerance: '',
+    deadline: '',
+    max_gas_fee: '',
+  });
 
   // Simulated Transaction Data for "confirm"
-  const transactionData = {
-    source_address: '0x123...',
-    destination_address: '0x456...',
-    from_network: 'Ethereum',
-    to_network: 'Bitcoin',
-    from_asset: 'ETH',
-    to_asset: 'BTC',
-    amount: '1.5 BTC',
-    slippage_tolerance: '1%',
-    deadline: '5 mins',
-    max_gas_fee: '0.01 ETH',
-  };
+  // const transactionData = {
+  //   source_address: '0x123...',
+  //   destination_address: '0x456...',
+  //   from_network: 'Ethereum',
+  //   to_network: 'Bitcoin',
+  //   from_asset: 'ETH',
+  //   to_asset: 'BTC',
+  //   amount: '1.5 BTC',
+  //   slippage_tolerance: '1%',
+  //   deadline: '5 mins',
+  //   max_gas_fee: '0.01 ETH',
+  // };
 
   const isLoading = messages.length && messages[messages.length - 1].loading;
 
@@ -42,10 +61,54 @@ function Chatbot({ provider }) {
     if (trimmedMessage.toLowerCase() === 'confirm') {
       // Show loading popup for 3 seconds, then show details popup
       setIsLoadingPopup(true);
-      setTimeout(() => {
+      const contractAddress = '0x3693378DbbcB761dCF5d071Ab62547f6fBD9D075'; // Replace with your actual contract address
+      const contractABI = dummyABI;
+
+      try {
+        const browserProvider = new BrowserProvider(provider); // Wrap the provider
+        const signer = await browserProvider.getSigner(); // getSigner() is async
+        const contract = new Contract(contractAddress, contractABI, signer); // Create the contract instance
+
+        const tx = await contract.deposit({
+          value: parseEther('0.0000001'),
+        }); // Send ETH to deposit function
+        await tx.wait();
+
+        const confirmation = await api.confirmTransaction(chatId);
+        const { data } = confirmation;
+
+        console.log('data', data.parameters);
+
+        // Update transactionData state
+        const newTransactionData = {
+          source_address: data.parameters.source_address,
+          destination_address: data.parameters.destination_address,
+          from_network: data.parameters.from_network,
+          to_network: data.parameters.to_network,
+          from_asset: data.parameters.from_asset,
+          to_asset: data.parameters.to_asset,
+          amount: data.parameters.amount,
+          slippage_tolerance: data.parameters.slippage_tolerance,
+          deadline: data.parameters.deadline,
+          max_gas_fee: data.parameters.max_gas_fee,
+        };
+
+        console.log('order', newTransactionData);
+
+        setTransactionData(newTransactionData); // Update the state with transaction data
+
+        console.log('Updated transactionData:', newTransactionData);
+
         setIsLoadingPopup(false);
         setShowDetailsPopup(true);
-      }, 3000);
+
+        // Create a new order using the updated transaction data
+        const createdOrder = await api.createOrder(newTransactionData);
+        console.log('Order created successfully:', createdOrder);
+      } catch (error) {
+        console.error('Transaction failed:', error);
+        alert('Transaction failed: ' + error.message);
+      }
 
       setMessages((draft) => [
         ...draft,
@@ -53,9 +116,15 @@ function Chatbot({ provider }) {
         { role: 'assistant', content: 'Thank you, your intent is stored.' },
       ]);
       setNewMessage('');
+
+      if (!provider) {
+        alert('Provider not available. Please log in.');
+        return;
+      }
       return;
     }
 
+    // Normal message handling
     let chatIdOrNew = chatId;
 
     setMessages((draft) => [
@@ -74,7 +143,6 @@ function Chatbot({ provider }) {
       }
 
       // Send the message and handle the response
-      if (trimmedMessage.toLowerCase() === 'confirm') return;
       const stream = await api.sendChatMessage(chatIdOrNew, trimmedMessage);
       setMessages((draft) => {
         draft[draft.length - 1].content += stream.response;
@@ -87,55 +155,9 @@ function Chatbot({ provider }) {
         draft[draft.length - 1].error = true;
       });
     }
-
-    // Check for the keyword 'confirm' in the user's input
-    if (trimmedMessage.toLowerCase().includes('confirm')) {
-      alert('Confirm has been triggered');
-
-      if (!provider) {
-        alert('Provider not available. Please log in.');
-        return;
-      }
-
-      const contractAddress = '0x7483B3B68dE992b228Cd561e5a3219237839A71b'; // Replace with your actual contract address
-      const contractABI = dummyABI;
-
-      try {
-        const browserProvider = new BrowserProvider(provider); // Wrap the provider
-        const signer = await browserProvider.getSigner(); // getSigner() is async
-        const contract = new Contract(contractAddress, contractABI, signer); // Create the contract instance
-
-        const tx = await contract.deposit({ value: parseEther('0.0001') }); // Send ETH to deposit function
-        await tx.wait(); // Wait for the transaction to be mined
-        alert('Transaction successful!');
-        const sessionId = 'your-session-id';
-
-        console.log(chatIdOrNew);
-        const confirmation = await api.confirmTransaction(chatIdOrNew);
-        const { data } = confirmation;
-        const newOrder = {
-          sourceAddress: data.source_address,
-          destinationAddress: data.destination_address,
-          fromNetwork: data.from_network,
-          toNetwork: data.to_network,
-          fromAsset: data.from_asset,
-          toAsset: data.to_asset,
-          amount: data.amount,
-          slippageTolerance: data.slippage_tolerance,
-          deadline: data.deadline,
-          maxGasFee: data.max_gas_fee,
-          description: 'Order created from transaction confirmation', // Optional field
-        };
-
-        // Create a new order using the extracted data
-        const createdOrder = await api.createOrder(newOrder);
-        console.log('Order created successfully:', createdOrder);
-      } catch (error) {
-        console.error('Transaction failed:', error);
-        alert('Transaction failed: ' + error.message);
-      }
-    }
   }
+
+  console.log('2 transactionData', transactionData);
 
   // Add transaction data to intents
   const addToIntents = () => {
@@ -254,15 +276,24 @@ function Chatbot({ provider }) {
 
             {/* Transaction Data */}
             <div className="bg-background p-4 rounded-lg shadow-inner text-gray-300 mb-6">
-              {Object.entries(transactionData).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="flex justify-between border-b border-gray-600 py-2 last:border-none"
-                >
-                  <span className="font-medium text-gray-400">{key}:</span>
-                  <span className="text-gray-200">{value || 'N/A'}</span>
-                </div>
-              ))}
+              {Object.entries(transactionData).map(([key, value]) => {
+                // Check for specific keys and truncate the value
+                const displayValue =
+                  (key === 'source_address' || key === 'destination_address') &&
+                  value
+                    ? `${value.slice(0, 3)}...${value.slice(-3)}`
+                    : value || 'N/A';
+
+                return (
+                  <div
+                    key={key}
+                    className="flex justify-between border-b border-gray-600 py-2 last:border-none"
+                  >
+                    <span className="font-medium text-gray-400">{key}:</span>
+                    <span className="text-gray-200">{displayValue}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Button */}

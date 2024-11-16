@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/home/Navbar';
+import LogicNavbar from '../components/home/LogicNavbar';
+import Footer from '../components/home/Footer';
+import LoadingPopup from '../components/LoadingPopup';
 
 function Chat() {
   const clientId = 'VYDh3cKkTV6gUfFHQAuzV87ZKHo6Vd6t'; // Replace with your Web3Auth Client ID
@@ -61,18 +64,14 @@ function Chat() {
   return (
     <div className="min-h-screen text-main">
       {/* Header */}
-      <Navbar />
+      <LogicNavbar />
 
       {/* Chat Section */}
       <div className="w-full flex flex-col min-h-[90vh] bg-[#16161a] text-headline">
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-sub-headline">
-            Initializing Web3Auth...
-          </div>
-        ) : (
-          <Chatbot provider={provider} />
-        )}
+        {loading ? <LoadingPopup /> : <Chatbot provider={provider} />}
       </div>
+
+      <Footer />
     </div>
   );
 }
