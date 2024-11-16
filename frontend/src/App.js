@@ -12,11 +12,10 @@ import {
   Route,
   useNavigate,
 } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
 import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
-import SolverPage from './pages/SolverPage';
 import HomePage from './pages/HomePage';
-import LoadingPopup from './components/LoadingPopup';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 import { decodeToken, Web3Auth } from '@web3auth/single-factor-auth';
 import { initializeApp } from 'firebase/app';
@@ -27,6 +26,7 @@ import {
   UserCredential,
   signOut,
 } from 'firebase/auth';
+import 'react-toastify/dist/ReactToastify.css';
 
 // const clientId = 'VYDh3cKkTV6gUfFHQAuzV87ZKHo6Vd6t';
 // IMP START - Blockchain Calls
@@ -181,30 +181,38 @@ const App = () => {
   }
 
   const login = async () => {
-    if (!web3auth) {
-      uiConsole('web3auth initialised yet');
-      return;
-    }
-    // IMP START - Auth Provider Login
-    // login with firebase
-    const loginRes = await signInWithGoogle();
-    // get the id token from firebase
-    const idToken = await loginRes.user.getIdToken(true);
-    const { payload } = decodeToken(idToken);
-    // IMP END - Auth Provider Login
+    try {
+      if (!web3auth) {
+        uiConsole('Web3Auth not initialized yet');
+        return;
+      }
 
-    // IMP START - Login
-    const web3authProvider = await web3auth.connect({
-      verifier,
-      verifierId: payload.sub,
-      idToken,
-    });
-    // IMP END - Login
+      // Check if already connected
+      if (provider) {
+        toast.info('Already connected. Redirecting to chat page.');
+        navigate('/chat');
+        return;
+      }
 
-    if (web3authProvider) {
-      setLoggedIn(true);
-      setProvider(web3authProvider);
-      navigate('/chat');
+      // Auth Provider Login
+      const loginRes = await signInWithGoogle();
+      const idToken = await loginRes.user.getIdToken(true);
+      const { payload } = decodeToken(idToken);
+
+      // Web3Auth Login
+      const web3authProvider = await web3auth.connect({
+        verifier,
+        verifierId: payload.sub,
+        idToken,
+      });
+
+      if (web3authProvider) {
+        setLoggedIn(true);
+        setProvider(web3authProvider);
+        navigate('/chat');
+      }
+    } catch (error) {
+      console.error('Login failed:', error.message);
     }
   };
 
@@ -231,30 +239,23 @@ const App = () => {
   // }
 
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route
-        path="/user"
-        element={
-          <AuthPage
-            address={address}
-            userData={userData}
-            handleLogin={login}
-            handleLogout={logout}
-          />
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <ChatPage
-            provider={provider}
-            address={address}
-            handleLogout={logout}
-          />
-        }
-      />
-    </Routes>
+    <>
+      {/* Toast Notifications Container */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
+
+      {/* Routes */}
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route
+          path="/user"
+          element={<AuthPage handleLogin={login} handleLogout={logout} />}
+        />
+        <Route
+          path="/chat"
+          element={<ChatPage provider={provider} handleLogout={logout} />}
+        />
+      </Routes>
+    </>
   );
 };
 

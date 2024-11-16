@@ -2,8 +2,6 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Navbar = () => {
-  const navigate = useNavigate();
-
   return (
     <header className="w-full sticky top-0 shrink-0 z-20 bg-[#16161a] shadow-md">
       <div className="flex items-center justify-between h-20 max-w-7xl mx-auto px-6">
@@ -23,7 +21,9 @@ const Navbar = () => {
             </button>
           </Link>
           <button
-            onClick={() => window.open('https://example.com/solver', '_blank')}
+            onClick={() =>
+              window.open('https://solverethbangkok.vercel.app/', '_blank')
+            }
             className="px-5 py-2 bg-transparent border-2 border-white text-white font-medium text-sm rounded-full hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black shadow-md transition-all"
           >
             Solver

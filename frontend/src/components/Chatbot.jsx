@@ -8,13 +8,6 @@ import LoadingPopup from './LoadingPopup';
 import { BrowserProvider, Contract, parseEther } from 'ethers';
 import { Settlement } from '../contract_abis/dummyAbi';
 
-function truncateAddress(address) {
-  if (!address || address.length <= 6) {
-    return address; // Return as is if the address is too short
-  }
-  return `${address.slice(0, 3)}...${address.slice(-3)}`;
-}
-
 function Chatbot({ provider }) {
   const [chatId, setChatId] = useState(null);
   const [messages, setMessages] = useImmer([]);
@@ -24,7 +17,6 @@ function Chatbot({ provider }) {
   const [showDetailsPopup, setShowDetailsPopup] = useState(false);
   const [transactionData, setTransactionData] = useState({
     source_address: '',
-    destination_address: '',
     from_network: '',
     to_network: '',
     from_asset: '',
@@ -77,12 +69,9 @@ function Chatbot({ provider }) {
         const confirmation = await api.confirmTransaction(chatId);
         const { data } = confirmation;
 
-        console.log('data', data.parameters);
-
         // Update transactionData state
         const newTransactionData = {
           source_address: data.parameters.source_address,
-          destination_address: data.parameters.destination_address,
           from_network: data.parameters.from_network,
           to_network: data.parameters.to_network,
           from_asset: data.parameters.from_asset,
@@ -92,8 +81,6 @@ function Chatbot({ provider }) {
           deadline: data.parameters.deadline,
           max_gas_fee: data.parameters.max_gas_fee,
         };
-
-        console.log('order', newTransactionData);
 
         setTransactionData(newTransactionData); // Update the state with transaction data
 
@@ -270,17 +257,19 @@ function Chatbot({ provider }) {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
           <div className="bg-card-background p-6 rounded-lg shadow-xl w-[450px] max-w-full">
             {/* Title */}
-            <h4 className="text-xl font-bold text-white mb-6 text-center">
+            <h4 className="text-xl font-bold text-white mb-2 text-center">
               Transaction Details
             </h4>
+            <p className="text-lg font-medium text-green-400 text-center mb-6">
+              🎉 Hurray! Transaction successful!
+            </p>
 
             {/* Transaction Data */}
             <div className="bg-background p-4 rounded-lg shadow-inner text-gray-300 mb-6">
               {Object.entries(transactionData).map(([key, value]) => {
                 // Check for specific keys and truncate the value
                 const displayValue =
-                  (key === 'source_address' || key === 'destination_address') &&
-                  value
+                  key === 'source_address' && value
                     ? `${value.slice(0, 3)}...${value.slice(-3)}`
                     : value || 'N/A';
 
