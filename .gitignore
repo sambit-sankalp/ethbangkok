@@ -1,0 +1,11 @@
+node_modules
+.idea
+
+#Hardhat files
+cache
+artifacts
+
+LLM/__pycache__
+LLM/venv
+LLM/env
+LLM
