@@ -66,6 +66,27 @@ async function createOrder(order) {
   return res.json(); // Parse and return the response JSON
 }
 
+async function updateStatusOrder(orderId) {
+  try {
+    const res = await fetch(`http://localhost:3001/orders/${orderId}/solved`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      // No need to include a body unless your endpoint requires additional data
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      return Promise.reject({ status: res.status, data: errorData });
+    }
+
+    return res.json(); // Parse and return the response JSON
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    throw error;
+  }
+}
+
+
 export default {
   createChat,
   sendChatMessage,
