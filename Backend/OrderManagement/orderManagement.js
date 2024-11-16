@@ -51,6 +51,38 @@ app.post('/orders', async (req, res) => {
   }
 });
 
+// API to update order status to 'solved'
+app.put('/orders/:id/solved', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const orderRef = db.collection(ORDERS_COLLECTION).doc(id);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      return res.status(404).send({ error: 'Order not found' });
+    }
+
+    await orderRef.update({
+      status: 'solved',
+    });
+
+    // If there's a timer for this order, clear it
+    if (timers.has(id)) {
+      clearTimeout(timers.get(id));
+      timers.delete(id);
+    }
+
+    // Notify clients via Socket.io
+    io.to(id).emit('order_solved', { orderId: id });
+
+    res.send({ message: 'Order status updated to solved' });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).send({ error: 'Failed to update order status' });
+  }
+});
+
 // Start the timer for an order
 function startOrderTimer(orderId) {
     if (timers.has(orderId)) return; // Timer already exists
