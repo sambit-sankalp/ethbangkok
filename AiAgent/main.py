@@ -181,3 +181,23 @@ def get_session_data(session_id: str):
         f"Retrieved transaction string for session {session_id}: {transaction_string}"
     )
     return {"session_id": session_id, "data": transaction_string}
+
+
+@app.delete("/end_session/{session_id}")
+def end_session(session_id: str):
+    """
+    End a session and delete its data.
+    """
+    if not redis_client.exists(session_id):
+        logging.error(f"Session not found: {session_id}")
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    redis_client.delete(session_id)
+    logging.info(f"Session {session_id} ended and data deleted.")
+    return {"session_id": session_id, "message": "Session ended and data deleted."}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
