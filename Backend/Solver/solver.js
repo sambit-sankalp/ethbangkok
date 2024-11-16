@@ -3,9 +3,13 @@ const io = require('socket.io-client');
 const ethers = require('ethers');
 const admin = require('firebase-admin');
 const readline = require('readline');
+const SolverContractABI =  require('../../artifacts/contracts/SolverDAO.sol/SolverDAO.json');
+const Settlementcontract =  require('../../artifacts/contracts/Settlement.sol/Settlement.json')
+const {SolverDAO,SettlementArbitrum,SettlementSepolia}= require("../../artifacts/contract-address.json");
+const OrderLib =  require("../../Backend/Solver/OrderLib");
 
 // Import wallet credentials
-const { PRIVATE_KEY } = require('./wallet');
+const { PRIVATE_KEY } = require('./wallet.js');
 
 // Initialize Firebase Admin SDK
 const serviceAccount = require('./serviceAccountKey.json'); // Ensure this file is in your project directory
@@ -13,6 +17,8 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 const db = admin.firestore();
+const solver_address = "0xaB41Ebb2c06Fd1488A21268D9DfA6536735a0b7E";
+const callData = ethers.utils.arrayify("0x000000000000000000000000ab41ebb2c06fd1488a21268d9dfa6536735a0b7e0000000000000000000000000000000000000000000000000000000000061a80")
 
 
 function loadingAnimation(duration = 5) {
@@ -54,31 +60,35 @@ function loadingAnimation(duration = 5) {
   });
   
   // Define the server URL and socket connection
-  const SERVER_URL = 'http://localhost:3001'; // Update this if your server is on a different URL
+  const SERVER_URL = 'http://localhost:3003'; // Update this if your server is on a different URL
   const socket = io(SERVER_URL);
   
   // Ethereum provider setup
-  const INFURA_PROJECT_ID = '50b156a9977746479bc5f3f748348ac4'; // Replace with your Infura Project ID
-  const provider = new ethers.providers.InfuraProvider('sepolia', INFURA_PROJECT_ID); // Use 'mainnet' for mainnet
+  const provider = new ethers.providers.JsonRpcProvider('https://scroll-sepolia.g.alchemy.com/v2/tiEhnsFVpY2MVCkwQHUsKReA5RGhS0x2'); // Use 'mainnet' for mainnet
   
+  const provider2 = new ethers.providers.JsonRpcProvider('https://arb-sepolia.g.alchemy.com/v2/tiEhnsFVpY2MVCkwQHUsKReA5RGhS0x2'); // Use 'mainnet' for mainnet
+
   // Create a signer
   const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+  const wallet2 = new ethers.Wallet(PRIVATE_KEY,provider2);
+
   
   // Smart contract address and ABI
-  const contractAddress = '0x7c177Af5c883F793FC9d36572c3e8C23d9f21D72'; // Replace with your deployed contract address
-  const contractABI = [
-    // ABI of your contract
-    {
-      inputs: [],
-      name: 'deposit',
-      outputs: [],
-      stateMutability: 'payable',
-      type: 'function',
-    },
-    // Add other functions if needed
-  ];
+  // const contractABI = [
+  //   // ABI of your contract
+  //   {
+  //     inputs: [],
+  //     name: 'deposit',
+  //     outputs: [],
+  //     stateMutability: 'payable',
+  //     type: 'function',
+  //   },
+  //   // Add other functions if needed
+  // ];
 
-  const contract = new ethers.Contract(contractAddress, contractABI, wallet);
+  const contract = new ethers.Contract(SolverDAO,SolverContractABI.abi, wallet);
+  const SettlementContract = new ethers.Contract(SettlementArbitrum,Settlementcontract.abi, wallet2);
+
 
 // Function to get a valid quote from the user
 async function getValidQuote(maxQuote) {
@@ -94,6 +104,75 @@ async function getValidQuote(maxQuote) {
     });
   });
 }
+
+
+// Function to get a valid quote from the user
+async function getValidQuote(maxQuote) {
+  return new Promise((resolve) => {
+    rl.question('Enter quote: ', (quote) => {
+      quote = parseFloat(quote);
+      if (quote > maxQuote) {
+        console.error(`❌ Quote exceeds the maximum allowed value of ${maxQuote}. Please try again.`);
+        resolve(getValidQuote(maxQuote)); // Recursively prompt for a valid quote
+      } else {
+        resolve(quote); // Return the valid quote
+      }
+    });
+  });
+}
+
+//async function for posting solution
+
+//async function for Filling the order
+
+const fillusingCallData = async(calldata)=>{
+  try{
+  const tx = await wallet2.sendTransaction({
+    to: SettlementArbitrum,
+    data: calldata,
+    // gasLimit: ethers.utils.hexlify(100000), // Set gas limit
+    value: ethers.utils.parseEther("1") // Set msg.value if required
+  
+}) 
+console.log("Order Filled Congratulations !")
+console.log(tx)
+
+}catch (txError) {
+    console.error('❌ Transaction failed:', txError);
+  }
+   }
+
+
+//async function for posting solution
+const postSolution= async(params)=>{
+  try{
+  const tx = await contract.postSolution(OrderLib.postParam,solver_address,params,{
+    value: ethers.BigNumber.from("1289583016446885"), // Specify the amount to deposit
+  });
+  console.log('Transaction sent. Waiting for confirmation...');
+  await tx.wait();
+  console.log('✅ Solution was accepted by DAO proceed with filling the order');
+} catch (txError) {
+  console.error('❌ Transaction failed:', txError);
+}
+ }
+//async function for Filling the order
+
+const fillOrder = async(calldata)=>{
+  try{
+    const tx = await SettlementContract.fill(OrderLib.fillParam,callData,{
+      value: ethers.BigNumber.from("800000000000000000"), // Specify the amount to deposit
+
+    });
+    console.log('Transaction sent. Waiting for confirmation...');
+    await tx.wait();
+    console.log(`✅ order filled see hash at ${tx}`);
+  } catch (txError) {
+    console.error('❌ Transaction failed:', txError);
+  }
+   }
+
+
 
 // Function to get or initialize solver's reputation
 async function getSolverReputation(competitorId) {
@@ -170,31 +249,35 @@ rl.question('Enter your ID: ', async (competitorId) => {
                 if (data.competitorId === competitorId) {
                   console.log(`\n🎉 Congratulations! You are the winner with a quote of ${data.quote}`);
                   // Trigger the deposit function
-                  try {
-                    const tx = await contract.deposit({
-                      value: ethers.utils.parseEther('0.0001'), // Specify the amount to deposit
-                      gasLimit: 100000, // Adjust gas limit as needed
-                    });
-                    console.log('Transaction sent. Waiting for confirmation...');
-                    await tx.wait();
-                    console.log('✅ Deposit transaction successful!');
-                  } catch (txError) {
-                    console.error('❌ Transaction failed:', txError);
-                    // Decrement reputation
-                    await updateSolverReputation(competitorId, -1);
-                    console.log('Your reputation has been decreased due to transaction failure.');
-  
-                    // Check if reputation is below threshold
-                    const newReputation = await getSolverReputation(competitorId);
-                    if (newReputation <= -3) {
-                      console.error('❌ You have been blocked from participating due to low reputation.');
-                    }
-                  }
+                  rl.question("Post Solution Calldata: ",async(params)=>{
+                    try {
+                         await postSolution(params)
+                      rl.question("Enter CallData: ",async(callData)=>{
+                        try{
+                            await fillusingCallData(callData)
+                        }catch(error){
+                          console.log(`Error in tx${error}` )
+                          rl.close();
+                        }
+                      })
+                     } catch (txError) {
+                       console.error('❌ Transaction failed:', txError);
+                       await updateSolverReputation(competitorId, -1);
+                       console.log('Your reputation has been decreased due to transaction failure.');
+                       // Check if reputation is below threshold
+                       const newReputation = await getSolverReputation(competitorId);
+                       if (newReputation <= -3) {
+                         console.error('❌ You have been blocked from participating due to low reputation.');
+                       }
+                           rl.close();
+                           socket.disconnect();
+                     }
+                  })  
+        
                 } else {
                   console.log(`\nSorry, the winner is Competitor ID: ${data.competitorId} with a quote of ${data.quote}`);
                 }
-                rl.close();
-                socket.disconnect();
+          
               });
   
               console.log('Waiting for winner announcement...');

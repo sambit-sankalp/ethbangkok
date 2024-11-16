@@ -4,9 +4,9 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto flex justify-between items-center px-6">
         {/* Logo Text */}
         <h1 className="text-3xl font-bold text-white tracking-wide drop-shadow-lg">
-          Phoenix
+          Intent
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 tracking-wide">
-            Fi
+            Flow
           </span>
         </h1>
 
@@ -28,7 +28,7 @@ const Footer = () => {
 
         {/* Copyright Message */}
         <p className="text-lg font-medium text-gray-500">
-          © {new Date().getFullYear()} PhoenixFi. All Rights Reserved.
+          © {new Date().getFullYear()} IntentFlow. All Rights Reserved.
         </p>
       </div>
     </footer>

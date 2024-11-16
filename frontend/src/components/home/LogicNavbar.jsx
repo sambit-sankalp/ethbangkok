@@ -6,9 +6,9 @@ const LogicNavbar = ({ handleLogout }) => {
       <div className="flex items-center justify-between h-20 max-w-7xl mx-auto px-6">
         {/* Website Name */}
         <h1 className="text-3xl font-bold text-white tracking-wide drop-shadow-lg">
-          Phoenix
+          Intent
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 tracking-wide">
-            Fi
+            Flow
           </span>
         </h1>
 

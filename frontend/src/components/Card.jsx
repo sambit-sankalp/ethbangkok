@@ -17,12 +17,12 @@ const Card = ({ title, description, transactionData, options }) => {
     }, 4000); // Simulate loading for 4 seconds
   };
 
-  useEffect(() => {
-    setTimeout(() => {
-      setFetching(false);
-      setIsPopupOpen(true);
-    }, 4000); // Simulate loading for 4 seconds
-  }, [isFetching]);
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     setFetching(false);
+  //     setIsPopupOpen(true);
+  //   }, 4000); // Simulate loading for 4 seconds
+  // }, [isFetching]);
 
   return (
     <>

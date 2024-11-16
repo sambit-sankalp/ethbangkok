@@ -1,3 +1,4 @@
+/* global BigInt */
 import { useState, useEffect } from 'react';
 import { useImmer } from 'use-immer';
 import ChatMessages from './ChatMessages';
@@ -5,7 +6,7 @@ import ChatInput from './ChatInput';
 import api from '../api';
 import Card from './Card';
 import LoadingPopup from './LoadingPopup';
-import { BrowserProvider, Contract, parseEther } from 'ethers';
+import {getAddress,Contract,Wallet,JsonRpcProvider} from 'ethers';
 import { Settlement } from '../contract_abis/dummyAbi';
 
 function Chatbot({ provider }) {
@@ -45,6 +46,23 @@ function Chatbot({ provider }) {
 
   console.log('messages', messages);
 
+  const postParam = {
+    originSettler: getAddress("0x5f8CA817E4A0964a3CB2FeCc05364eEc01dA3105"), // Address of the origin settler
+    user: getAddress("0x49535e0D37E232F43b1c35541978c562051473D6"), // Address of the user initiating the swap
+    nonce: 126, // Replay protection for the order
+    originChainId: 40161, // Chain ID of the origin chain
+    openDeadline: 20222, // Timestamp by which the order must be opened
+    fillDeadline: 2023, // Timestamp by which the order must be filled on the destination chain
+    orderDataType: "0x0000000000000000000000000000000000000000000000000000000000000000", // EIP-712 typehash
+    destinationChain: getAddress("0xDC3Cf6F5086BA912522Fb526BEa80EC8742c32C0"), // Address for the destination chain
+    SourceToken: getAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9"), // ERC-20 source token
+    DestinationToken: getAddress("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"), // ERC-20 destination token
+    tokenAmount: BigInt("10000000000000000"), // Token amount to be bridged/swapped
+    destinationTokenAmount:  BigInt("4000000"), // Destination token amount pre-calculated
+    destinationChainId: 40231, // Destination chain ID
+    isVerifyMessage: false // Verification status
+};
+
   // Handle sending a new message
   async function submitNewMessage() {
     const trimmedMessage = newMessage.trim();
@@ -53,18 +71,19 @@ function Chatbot({ provider }) {
     if (trimmedMessage.toLowerCase() === 'confirm') {
       // Show loading popup for 3 seconds, then show details popup
       setIsLoadingPopup(true);
-      const contractAddress = '0x9d42aA111a78Fb06eF0f13b63249a43ABDb95DaF'; // Replace with your actual contract address
-      const contractABI = dummyABI;
+      const contractAddress = '0x5f8CA817E4A0964a3CB2FeCc05364eEc01dA3105'; // Replace with your actual contract address
+      const contractABI = Settlement;
+     
 
       try {
-        const browserProvider = new BrowserProvider(provider); // Wrap the provider
-        const signer = await browserProvider.getSigner(); // getSigner() is async
-        const contract = new Contract(contractAddress, contractABI, signer); // Create the contract instance
+        const provider = new JsonRpcProvider('https://eth-sepolia.g.alchemy.com/v2/tiEhnsFVpY2MVCkwQHUsKReA5RGhS0x2'); // Use 'mainnet' for mainnet
+        const wallet = new Wallet("2d43020f2f737d3e520e9e31435c416025c18b0fcea614d774059bbeae6f", provider);
+  
+        const contract = new Contract(contractAddress, contractABI, wallet); // Create the contract instance
 
-        const tx = await contract.deposit({
-          value: parseEther('0.000001'),
-        }); // Send ETH to deposit function
-        await tx.wait();
+        const tx = await contract.initiate(postParam,"0x0000000000000000000000000000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000000000000000000000000000"); 
+         tx.wait();
+         console.log(tx)
 
         const confirmation = await api.confirmTransaction(chatId);
         const { data } = confirmation;
@@ -255,45 +274,51 @@ function Chatbot({ provider }) {
       {/* Key-Value Pairs Popup */}
       {showDetailsPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-          <div className="bg-card-background p-6 rounded-lg shadow-xl w-[450px] max-w-full">
-            {/* Title */}
-            <h4 className="text-xl font-bold text-white mb-2 text-center">
-              Transaction Details
-            </h4>
-            <p className="text-lg font-medium text-green-400 text-center mb-6">
-              🎉 Hurray! Transaction successful!
-            </p>
-
-            {/* Transaction Data */}
-            <div className="bg-background p-4 rounded-lg shadow-inner text-gray-300 mb-6">
-              {Object.entries(transactionData).map(([key, value]) => {
-                // Check for specific keys and truncate the value
-                const displayValue =
-                  key === 'source_address' && value
-                    ? `${value.slice(0, 3)}...${value.slice(-3)}`
-                    : value || 'N/A';
-
-                return (
-                  <div
-                    key={key}
-                    className="flex justify-between border-b border-gray-600 py-2 last:border-none"
-                  >
-                    <span className="font-medium text-gray-400">{key}:</span>
-                    <span className="text-gray-200">{displayValue}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Button */}
-            <button
-              onClick={addToIntents}
-              className="w-full px-4 py-2 bg-[#fff] text-black font-semibold rounded-md hover:bg-[#dadada] transition-all shadow-md"
-            >
-              Add to Intents
-            </button>
+        <div className="bg-card-background p-6 rounded-lg shadow-xl w-[450px] max-w-full">
+          {/* Title */}
+          <h4 className="text-xl font-bold text-white mb-2 text-center">
+            Transaction Details
+          </h4>
+          <p className="text-lg font-medium text-green-400 text-center mb-6">
+            🎉 Hurray! Transaction successful!
+          </p>
+      
+          {/* Transaction Data */}
+          <div className="bg-background p-4 rounded-lg shadow-inner text-gray-300 mb-6">
+            {Object.entries(transactionData).map(([key, value]) => {
+              // Check for specific keys and truncate the value
+              const displayValue =
+                key === 'source_address' && value
+                  ? `${value.slice(0, 3)}...${value.slice(-3)}`
+                  : value || 'N/A';
+      
+              return (
+                <div
+                  key={key}
+                  className="flex justify-between border-b border-gray-600 py-2 last:border-none"
+                >
+                  <span className="font-medium text-gray-400">{key}:</span>
+                  <span className="text-gray-200">{displayValue}</span>
+                </div>
+              );
+            })}
           </div>
+      
+          {/* Button */}
+          <button
+            onClick={addToIntents}
+            className="w-full px-4 py-2 bg-[#fff] text-black font-semibold rounded-md hover:bg-[#dadada] transition-all shadow-md"
+          >
+            Add to Intents
+          </button>
+      
+          {/* Additional Text */}
+          <p className="text-center text-gray-400 text-sm mt-4">
+            Funds Logged. Intents will be picked up by a solver soon. 🚀
+          </p>
         </div>
+      </div>
+      
       )}
     </div>
   );

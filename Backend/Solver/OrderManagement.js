@@ -58,7 +58,8 @@ function startOrderTimer(orderId) {
   const timer = setTimeout(async () => {
     await selectWinner(orderId);
     timers.delete(orderId); // Remove timer after execution
-  }, 30000); // 5 minutes in milliseconds
+    console.log("End Comp")
+  }, 20000); // 5 minutes in milliseconds
 
   timers.set(orderId, timer);
 }
@@ -178,7 +179,7 @@ io.on('connection', (socket) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

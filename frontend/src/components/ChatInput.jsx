@@ -31,7 +31,7 @@ function ChatInput({ newMessage, isLoading, setNewMessage, submitNewMessage }) {
         {/* Auto-sizing Textarea */}
         <textarea
           ref={textareaRef}
-          className="flex-grow max-h-[100px] py-1 bg-card-background text-headline placeholder:text-sub-headline rounded-full focus:outline-none"
+          className="flex-grow max-h-[100px] py-1 px-2 bg-card-background text-headline placeholder:text-sub-headline rounded-full focus:outline-none"
           rows="1"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}

@@ -465,7 +465,7 @@ export const Settlement = [
 				"type": "bytes"
 			}
 		],
-		"name": "initiate",
+		"name": "initiated",
 		"outputs": [],
 		"stateMutability": "pure",
 		"type": "function"
