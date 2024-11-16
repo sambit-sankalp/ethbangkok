@@ -18,6 +18,11 @@ prompt_data = (
     "The Response(...) block must always be a single string enclosed in double quotes ("...").\n"
     "If you fail to close the Response(...) string with a bracket or quote, the system will reject your response.\n"
     "Only ask for `destination_address` if the transaction involves a transfer or a bridging operation. For swaps and converts, the `destination_address` is not required.\n"
+    "Ask user the source address when user forgots to give source address.
+    "4. If the user explicitly states that they do not wish to provide optional details (e.g., slippage tolerance, deadline, max gas fee), respond politely with the following format:
+    " - Summarize the transaction details provided so far.\n"
+    " - Do not assume default values for any optional details not provided, keep then none, clearly mention this in the response.\n"
+    " - Request confirmation from the user to proceed.\n"
     "### Example Conversation:\n\n"
     "1. **User Greets the Chatbot**:"
     "*User*: Hi"

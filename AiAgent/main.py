@@ -100,6 +100,7 @@ def process_input(request: SessionRequest):
     session_id = request.session_id
     user_input = request.user_input
 
+    # Retrieve session data
     transaction_string = redis_client.get(session_id)
     if transaction_string is None:  # If the key doesn't exist in Redis
         transaction_string = ""
@@ -107,6 +108,7 @@ def process_input(request: SessionRequest):
         f"Transaction string for session {session_id} before update: {transaction_string}"
     )
 
+    # LLM prompt
     llm_prompt = f"""
 Session_id:
 {session_id}
@@ -119,49 +121,57 @@ User input: "{user_input}"
 
 Please update the transaction data based on the user's input. Always output the response in the following format:
 
-Transaction(source_address='', destination_address='', from_network='', to_network='', from_asset='', to_asset='', amount='', slippage_tolerance='', deadline='', max_gas_fee='')
+Transaction(source_address='', from_network='', to_network='', from_asset='', to_asset='', amount='', slippage_tolerance='', deadline='', max_gas_fee='')
 Response("Your conversational response here.")
 
 Ensure the format is strictly maintained for every response.
 """
 
+    # Call the LLM to update transaction data
     llm_response = generate_response(transaction_string, llm_prompt)
     logging.info(f"Raw LLM response: {llm_response}")
 
+    # Extract and parse the transaction string
     try:
+        # Relax regex to handle line breaks or extra spaces
         transaction_match = re.search(r"Transaction\((.*)\)", llm_response, re.DOTALL)
-        response_match = re.search(r'Response\("(.*?)"\)', llm_response, re.DOTALL)
+        response_match = re.search(r'Response\((["\'])(.*?)\1\)', llm_response, re.DOTALL)
 
         if not transaction_match or not response_match:
-            raise ValueError(
-                "No valid Transaction or Response structure found in LLM response."
-            )
+            raise ValueError("No valid Transaction or Response structure found in LLM response.")
 
-        transaction_string = f"Transaction({transaction_match.group(1)})"
-        response_string = response_match.group(1)
+        # Extract transaction and response
+        full_transaction_string = f"Transaction({transaction_match.group(1).strip()})"
+        # Truncate the transaction string after the first closing bracket
+        transaction_string = full_transaction_string.split(")", 1)[0] + ")"
+        response_string = response_match.group(2).strip()
 
-        logging.info(f"Extracted transaction string: {transaction_string}")
+        logging.info(f"Extracted truncated transaction string: {transaction_string}")
         logging.info(f"Extracted response string: {response_string}")
+
     except ValueError as e:
         logging.error(f"Failed to parse LLM response: {e}")
         raise HTTPException(status_code=500, detail="LLM response could not be parsed.")
 
+    # Convert the transaction string to a dictionary
     transaction_dict = transaction_string_to_dict(transaction_string)
 
+    # Determine missing fields
     missing_fields = get_missing_fields(transaction_dict)
     logging.info(f"Missing fields for session {session_id}: {missing_fields}")
 
+    # Update session data in Redis
     redis_client.set(session_id, transaction_string)
     logging.info(
         f"Updated transaction string for session {session_id}: {transaction_string}"
     )
 
+    # Return JSON containing transaction, response, and missing fields
     return {
         "transaction": transaction_string,
         "response": response_string,
         "missing_fields": missing_fields,
     }
-
 
 @app.get("/get_session/{session_id}")
 def get_session_data(session_id: str):

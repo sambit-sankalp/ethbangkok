@@ -1,3 +1,7 @@
+import os
+import subprocess
+import sys  # Import sys to use sys.executable
+from langchain_groq import ChatGroq
 from langchain.chains import LLMChain
 from langchain_core.prompts import (
     ChatPromptTemplate,
@@ -6,11 +10,19 @@ from langchain_core.prompts import (
 )
 from langchain_core.messages import SystemMessage
 from langchain.chains.conversation.memory import ConversationBufferWindowMemory
-from langchain_groq import ChatGroq
+from prompts import prompt_data
+from cdp_langchain.agent_toolkits import CdpToolkit
+from cdp_langchain.utils import CdpAgentkitWrapper
+from cdp import Wallet, hash_message
+from cdp_langchain.tools import CdpTool
+from pydantic import BaseModel, Field
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage
 
 # Initialize LangChain components
 groq_api_key = "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"
 model = "llama3-8b-8192"
+system_prompt = prompt_data 
 
 groq_chat = ChatGroq(groq_api_key=groq_api_key, model_name=model)
 conversational_memory_length = 5
