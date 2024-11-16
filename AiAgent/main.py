@@ -100,6 +100,7 @@ def process_input(request: SessionRequest):
     session_id = request.session_id
     user_input = request.user_input
 
+    # Retrieve session data
     transaction_string = redis_client.get(session_id)
     if transaction_string is None:  # If the key doesn't exist in Redis
         transaction_string = ""
@@ -107,6 +108,7 @@ def process_input(request: SessionRequest):
         f"Transaction string for session {session_id} before update: {transaction_string}"
     )
 
+    # LLM prompt
     llm_prompt = f"""
 Session_id:
 {session_id}
@@ -119,49 +121,57 @@ User input: "{user_input}"
 
 Please update the transaction data based on the user's input. Always output the response in the following format:
 
-Transaction(source_address='', destination_address='', from_network='', to_network='', from_asset='', to_asset='', amount='', slippage_tolerance='', deadline='', max_gas_fee='')
+Transaction(source_address='', from_network='', to_network='', from_asset='', to_asset='', amount='', slippage_tolerance='', deadline='', max_gas_fee='')
 Response("Your conversational response here.")
 
 Ensure the format is strictly maintained for every response.
 """
 
+    # Call the LLM to update transaction data
     llm_response = generate_response(transaction_string, llm_prompt)
     logging.info(f"Raw LLM response: {llm_response}")
 
+    # Extract and parse the transaction string
     try:
+        # Relax regex to handle line breaks or extra spaces
         transaction_match = re.search(r"Transaction\((.*)\)", llm_response, re.DOTALL)
-        response_match = re.search(r'Response\("(.*?)"\)', llm_response, re.DOTALL)
+        response_match = re.search(r'Response\((["\'])(.*?)\1\)', llm_response, re.DOTALL)
 
         if not transaction_match or not response_match:
-            raise ValueError(
-                "No valid Transaction or Response structure found in LLM response."
-            )
+            raise ValueError("No valid Transaction or Response structure found in LLM response.")
 
-        transaction_string = f"Transaction({transaction_match.group(1)})"
-        response_string = response_match.group(1)
+        # Extract transaction and response
+        full_transaction_string = f"Transaction({transaction_match.group(1).strip()})"
+        # Truncate the transaction string after the first closing bracket
+        transaction_string = full_transaction_string.split(")", 1)[0] + ")"
+        response_string = response_match.group(2).strip()
 
-        logging.info(f"Extracted transaction string: {transaction_string}")
+        logging.info(f"Extracted truncated transaction string: {transaction_string}")
         logging.info(f"Extracted response string: {response_string}")
+
     except ValueError as e:
         logging.error(f"Failed to parse LLM response: {e}")
         raise HTTPException(status_code=500, detail="LLM response could not be parsed.")
 
+    # Convert the transaction string to a dictionary
     transaction_dict = transaction_string_to_dict(transaction_string)
 
+    # Determine missing fields
     missing_fields = get_missing_fields(transaction_dict)
     logging.info(f"Missing fields for session {session_id}: {missing_fields}")
 
+    # Update session data in Redis
     redis_client.set(session_id, transaction_string)
     logging.info(
         f"Updated transaction string for session {session_id}: {transaction_string}"
     )
 
+    # Return JSON containing transaction, response, and missing fields
     return {
         "transaction": transaction_string,
         "response": response_string,
         "missing_fields": missing_fields,
     }
-
 
 @app.get("/get_session/{session_id}")
 def get_session_data(session_id: str):
@@ -195,6 +205,90 @@ def end_session(session_id: str):
     redis_client.delete(session_id)
     logging.info(f"Session {session_id} ended and data deleted.")
     return {"session_id": session_id, "message": "Session ended and data deleted."}
+
+
+
+def parse_dsl(dsl_input):
+    """
+    Parses a Transaction(...) formatted string into a JSON object.
+    """
+    txn_pattern = r"Transaction\(([^)]+)\)"
+    param_pattern = r"(\w+)='([^']*)'|(\w+)=(\d+\.?\d*)"
+
+    transaction = {
+        "action": "Transaction",
+        "parameters": {
+            "source_address": None,
+            "from_network": None,
+            "to_network": None,
+            "from_asset": None,
+            "to_asset": None,
+            "amount": None,
+            "slippage_tolerance": None,  # Default to 0.5% if not provided
+            "deadline": None,           # Default to 300 seconds if not provided
+            "max_gas_fee": None,       # No default for max_gas_fee
+        },
+    }
+
+    txn_match = re.search(txn_pattern, dsl_input)
+
+    if txn_match:
+        txn_params = txn_match.group(1)
+
+        for match in re.findall(param_pattern, txn_params):
+            if match[0]:  # String parameters
+                param_name = match[0]
+                param_value = match[1]
+                if param_name in transaction["parameters"]:
+                    transaction["parameters"][param_name] = param_value
+            elif match[2]:  # Numeric parameters
+                param_name = match[2]
+                param_value = float(match[3])
+                if param_name in transaction["parameters"]:
+                    transaction["parameters"][param_name] = param_value
+
+    return transaction
+
+
+@app.post("/confirm_transaction/")
+def confirm_transaction(request: ConfirmRequest):
+    """
+    Confirm the transaction and log all attributes to the console.
+    """
+    session_id = request.session_id
+
+    # Retrieve session data
+    transaction_string = redis_client.get(session_id)
+    if not transaction_string:
+        logging.error(f"Session not found or empty: {session_id}")
+        raise HTTPException(
+            status_code=404, detail="Session not found or no transaction data."
+        )
+
+    transaction_string = (
+        transaction_string.decode()
+        if isinstance(transaction_string, bytes)
+        else transaction_string
+    )
+
+    # Parse the transaction string into JSON
+    try:
+        parsed_transaction = parse_dsl(transaction_string)
+    except Exception as e:
+        logging.error(f"Failed to parse transaction string: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to parse transaction string."
+        )
+
+    # Log the parsed transaction
+    logging.info(
+        f"Transaction confirmed with the following data for session {session_id}: {json.dumps(parsed_transaction, indent=2)}"
+    )
+
+    return {
+        "message": "Transaction confirmed and logged successfully.",
+        "data": parsed_transaction,
+    }
 
 
 if __name__ == "__main__":
