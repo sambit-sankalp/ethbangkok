@@ -6,7 +6,7 @@ import api from '../api';
 import Card from './Card';
 import LoadingPopup from './LoadingPopup';
 import { BrowserProvider, Contract, parseEther } from 'ethers';
-import { dummyABI } from '../contract_abis/dummyAbi';
+import { Settlement } from '../contract_abis/dummyAbi';
 
 function truncateAddress(address) {
   if (!address || address.length <= 6) {
@@ -61,7 +61,7 @@ function Chatbot({ provider }) {
     if (trimmedMessage.toLowerCase() === 'confirm') {
       // Show loading popup for 3 seconds, then show details popup
       setIsLoadingPopup(true);
-      const contractAddress = '0x3693378DbbcB761dCF5d071Ab62547f6fBD9D075'; // Replace with your actual contract address
+      const contractAddress = '0x9d42aA111a78Fb06eF0f13b63249a43ABDb95DaF'; // Replace with your actual contract address
       const contractABI = dummyABI;
 
       try {
