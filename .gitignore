@@ -4,8 +4,3 @@ node_modules
 #Hardhat files
 cache
 artifacts
-
-LLM/__pycache__
-LLM/venv
-LLM/env
-LLM
