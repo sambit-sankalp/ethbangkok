@@ -110,6 +110,9 @@ function Chatbot({ provider }) {
 
         // Create a new order using the updated transaction data
         const createdOrder = await api.createOrder(newTransactionData);
+
+        console.log("createOrder", createdOrder.id);
+
         console.log('Order created successfully:', createdOrder);
       } catch (error) {
         console.error('Transaction failed:', error);
@@ -175,9 +178,17 @@ function Chatbot({ provider }) {
         description: 'Added via confirm command.',
         options: ['0.7 BTC', '1.2 BTC', '2.5 BTC'],
         transactionData,
+        status: 'in progress', // Set initial status
+
       },
     ]);
     setShowDetailsPopup(false); // Close popup after adding
+  };
+
+  const updateCardStatus = (id, newStatus) => {
+    setCardData((prev) =>
+      prev.map((card) => (card.id === id ? { ...card, status: newStatus } : card))
+    );
   };
 
   // Cleanup chat session on refresh/close
@@ -263,6 +274,8 @@ function Chatbot({ provider }) {
                 { option: 'Option 2', address: '0x456...def' },
                 { option: 'Option 3', address: '0x789...ghi' },
               ]}
+              status={card.status}
+            updateStatus={(newStatus) => updateCardStatus(card.id, newStatus)}
             />
           ))
         )}
@@ -309,7 +322,7 @@ function Chatbot({ provider }) {
             onClick={addToIntents}
             className="w-full px-4 py-2 bg-[#fff] text-black font-semibold rounded-md hover:bg-[#dadada] transition-all shadow-md"
           >
-            Add to Intents
+            Confirm
           </button>
       
           {/* Additional Text */}

@@ -91,5 +91,6 @@ export default {
   createChat,
   sendChatMessage,
   confirmTransaction,
-  createOrder
+  createOrder,
+  updateStatusOrder
 };

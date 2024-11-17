@@ -131,7 +131,7 @@ const Hero = () => {
             className="text-[30px] font-display flex justify-start items-center"
           >
             <span className="text-[50px] sm:text-[80px] bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">{`[`}</span>
-            <span className="mt-1 sm:mt-3">Y're just a question away</span>
+            <span className="mt-1 sm:mt-3">Y're just a conversation away</span>
             <span className="text-[50px] sm:text-[80px] bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">{`]`}</span>
           </h1>
 
@@ -141,9 +141,9 @@ const Hero = () => {
               className="text-[60px] sm:text-[150px] font-display leading-[65px] sm:leading-[151px] uppercase"
             >
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">
-                Real
+                Cross
               </span>{' '}
-              People
+              Chain
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">
                 .
               </span>
@@ -153,9 +153,8 @@ const Hero = () => {
               className="text-[60px] sm:text-[150px] font-display leading-[65px] sm:leading-[211px] uppercase -ml-[240px]"
             >
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">
-                Real
+                Simplified
               </span>{' '}
-              Results
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">
                 .
               </span>
@@ -165,9 +164,9 @@ const Hero = () => {
               className="text-[60px] sm:text-[150px] font-display leading-[65px] sm:leading-[151px] uppercase -ml-[355px]"
             >
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">
-                Real
+                For
               </span>{' '}
-              Fun
+              All
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient">
                 .
               </span>
